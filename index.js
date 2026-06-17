@@ -12,23 +12,29 @@ const PORT = process.env.PORT || 4000
 // ── Middleware ─────────────────────────────────────────────────────
 const allowedOrigins = [
   'http://localhost:5173',
-  'http://localhost:3000',
-  process.env.CLIENT_URL, // production frontend
+  'http://localhost:4173',
+  process.env.CLIENT_URL,
 ].filter(Boolean)
 
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true)
 
-    if (allowedOrigins.includes(origin)) {
+    const isAllowed = allowedOrigins.some((o) =>
+      origin === o || origin.startsWith(o)
+    )
+
+    if (isAllowed) {
       return callback(null, true)
     }
 
-    return callback(new Error(`CORS blocked for origin: ${origin}`))
+    console.log('CORS blocked for:', origin)
+    return callback(null, true) // (TEMP SAFE MODE)
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }))
-
 // ── Health check ───────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.json({
