@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 4000
 // ── Allowed origins ───────────────────────────────────────────────
 const allowedOrigins = [
   'http://localhost:5173',
-  'http://localhost:4173',
+  'https://rift-haul.vercel.app',
   process.env.CLIENT_URL,
 ].filter(Boolean)
 

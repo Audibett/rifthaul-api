@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken')
 
-// Verify JWT — attach user to req
+// Verify JWT — attach user to 
 function authenticate(req, res, next) {
   const header = req.headers.authorization
 
