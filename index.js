@@ -2,9 +2,9 @@ require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 
-const authRoutes = require('./routes/auth')
-const transporterRoutes = require('./routes/transporters')
-const bookingRoutes = require('./routes/bookings')
+const authRoutes = require('./src/routes/auth')
+const transporterRoutes = require('./src/routes/transporters')
+const bookingRoutes = require('./src/routes/bookings')
 
 const app = express()
 const PORT = process.env.PORT || 4000
