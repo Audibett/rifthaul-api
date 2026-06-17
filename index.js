@@ -9,38 +9,34 @@ const bookingRoutes     = require('./src/routes/bookings')
 const app  = express()
 const PORT = process.env.PORT || 4000
 
-// ── Allowed origins ────────────────────────────────────────────────
+// ── Allowed origins ───────────────────────────────────────────────
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:4173',
   process.env.CLIENT_URL,
 ].filter(Boolean)
 
-// ── Middleware — must be BEFORE routes ────────────────────────────
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true)
-
     const isAllowed = allowedOrigins.some(
       (o) => origin === o || origin.startsWith(o)
     )
-
     if (isAllowed) return callback(null, true)
-
     console.log('CORS blocked for:', origin)
     return callback(new Error(`CORS not allowed for origin: ${origin}`))
   },
   credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-}))
+}
 
-// ❌ REMOVED: app.options('*', cors())  <-- THIS WAS THE CRASH
-
+// ── Middleware — must be BEFORE routes ────────────────────────────
+app.use(cors(corsOptions))          // handles all routes including OPTIONS
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// ── Health check ───────────────────────────────────────────────────
+// ── Health check ──────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.json({
     status: 'ok',
@@ -55,15 +51,20 @@ app.use('/api/auth',         authRoutes)
 app.use('/api/transporters', transporterRoutes)
 app.use('/api/bookings',     bookingRoutes)
 
-// ── 404 handler ───────────────────────────────────────────────────
+// ── 404 handler ──────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.method} ${req.path} not found.` })
 })
 
-// ── Global error handler ──────────────────────────────────────────
+// ── Global error handler ─────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err.message)
-  res.status(500).json({ error: err.message || 'Something went wrong. Please try again.' })
+  const origin = req.headers.origin
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+  }
+  res.status(500).json({ error: err.message || 'Something went wrong.' })
 })
 
 // ── Start server ──────────────────────────────────────────────────
