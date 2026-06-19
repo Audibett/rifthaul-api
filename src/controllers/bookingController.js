@@ -12,6 +12,8 @@ async function generateBookingId() {
 
 // ── POST /api/bookings ─────────────────────────────────────────────
 // Customer creates a new booking
+// Price is calculated server-side from distance + weight so it can't
+// be tampered with from the client.
 async function createBooking(req, res) {
   try {
     const {
@@ -24,18 +26,18 @@ async function createBooking(req, res) {
       cargoType,
       weight,
       notes,
-      amount,
+      distanceKm,
     } = req.body
 
     // Validate required fields
-    if (!transporterProfileId || !from || !to || !date || !cargoType || !weight || !amount) {
+    if (!transporterProfileId || !from || !to || !date || !cargoType || !weight || !distanceKm) {
       return res.status(400).json({ error: 'Missing required booking fields.' })
     }
 
-    // Check transporter exists and is available
+    // Check transporter exists and is available — also fetch their rates
     const { data: profile, error: profileError } = await supabase
       .from('transporter_profiles')
-      .select('id, available, users(name)')
+      .select('id, available, price_per_km, price_per_tonne, users(name)')
       .eq('id', transporterProfileId)
       .single()
 
@@ -46,6 +48,22 @@ async function createBooking(req, res) {
     if (!profile.available) {
       return res.status(400).json({ error: 'This transporter is currently unavailable.' })
     }
+
+    // Parse numeric distance and weight safely
+    const distance = parseFloat(distanceKm)
+    const weightTonnes = parseFloat(weight) // handles "2.5 tonnes" -> 2.5
+
+    if (isNaN(distance) || distance <= 0) {
+      return res.status(400).json({ error: 'Invalid distance value.' })
+    }
+    if (isNaN(weightTonnes) || weightTonnes <= 0) {
+      return res.status(400).json({ error: 'Invalid weight value.' })
+    }
+
+    // ── Price calculation: distance cost + weight cost ───────────────
+    const distanceCost = distance * (profile.price_per_km || 0)
+    const weightCost = weightTonnes * (profile.price_per_tonne || 0)
+    const amount = Math.round(distanceCost + weightCost)
 
     // Generate booking ID
     const bookingId = await generateBookingId()

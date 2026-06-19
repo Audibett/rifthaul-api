@@ -16,6 +16,7 @@ async function getTransporters(req, res) {
         location,
         cargo_types,
         price_per_km,
+        price_per_tonne,
         rating,
         trips,
         available,
@@ -35,6 +36,7 @@ async function getTransporters(req, res) {
       location: t.location,
       cargoTypes: t.cargo_types || [],
       pricePerKm: t.price_per_km,
+      pricePerTonne: t.price_per_tonne,
       rating: t.rating,
       trips: t.trips,
       available: t.available,
@@ -96,6 +98,7 @@ async function getTransporterById(req, res) {
         location,
         cargo_types,
         price_per_km,
+        price_per_tonne,
         rating,
         trips,
         available,
@@ -119,6 +122,7 @@ async function getTransporterById(req, res) {
       location: data.location,
       cargoTypes: data.cargo_types || [],
       pricePerKm: data.price_per_km,
+      pricePerTonne: data.price_per_tonne,
       rating: data.rating,
       trips: data.trips,
       available: data.available,
@@ -164,14 +168,15 @@ async function updateAvailability(req, res) {
 // Transporter updates their own profile details
 async function updateProfile(req, res) {
   try {
-    const { truckType, capacity, location, cargoTypes, pricePerKm } = req.body
+    const { truckType, capacity, location, cargoTypes, pricePerKm, pricePerTonne } = req.body
 
     const updates = {}
-    if (truckType !== undefined)  updates.truck_type   = truckType
-    if (capacity !== undefined)   updates.capacity     = capacity
-    if (location !== undefined)   updates.location     = location
-    if (cargoTypes !== undefined) updates.cargo_types  = cargoTypes
-    if (pricePerKm !== undefined) updates.price_per_km = pricePerKm
+    if (truckType !== undefined)     updates.truck_type      = truckType
+    if (capacity !== undefined)      updates.capacity        = capacity
+    if (location !== undefined)      updates.location        = location
+    if (cargoTypes !== undefined)    updates.cargo_types     = cargoTypes
+    if (pricePerKm !== undefined)    updates.price_per_km    = pricePerKm
+    if (pricePerTonne !== undefined) updates.price_per_tonne = pricePerTonne
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'No fields provided to update.' })
