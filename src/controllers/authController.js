@@ -122,12 +122,15 @@ async function login(req, res) {
     }
 
     // Check selected role against actual role
-    if (role && user.role !== role) {
-      return res.status(403).json({
-        error: `This account is registered as a ${user.role}. Please select "${user.role}" to sign in.`
-      })
-    }
-
+    if (
+  role &&
+  ['customer', 'transporter'].includes(role) &&
+  user.role !== role
+) {
+  return res.status(403).json({
+    error: `This account is registered as a ${user.role}. Please select "${user.role}" to sign in.`
+  })
+}
     const token = signToken(user)
 
     return res.status(200).json({
