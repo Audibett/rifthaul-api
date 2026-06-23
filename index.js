@@ -5,6 +5,7 @@ const cors = require('cors')
 const authRoutes        = require('./src/routes/auth')
 const transporterRoutes = require('./src/routes/transporters')
 const bookingRoutes     = require('./src/routes/bookings')
+const adminRoutes       = require('./src/routes/admin')
 
 const app  = express()
 const PORT = process.env.PORT || 4000
@@ -50,6 +51,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth',         authRoutes)
 app.use('/api/transporters', transporterRoutes)
 app.use('/api/bookings',     bookingRoutes)
+app.use('/api/admin', adminRoutes)
 
 // ── 404 handler ──────────────────────────────────────────────────
 app.use((req, res) => {

@@ -121,6 +121,13 @@ async function login(req, res) {
       })
     }
 
+    // ── NEW: block suspended accounts ─────────────────────────────────
+if (user.suspended) {
+  return res.status(403).json({
+    error: 'Your account has been suspended. Please contact support.',
+  })
+}
+
     // Check selected role against actual role
     if (
   role &&
