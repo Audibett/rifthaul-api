@@ -37,7 +37,7 @@ async function createBooking(req, res) {
     // Check transporter exists and is available — also fetch their rates
     const { data: profile, error: profileError } = await supabase
       .from('transporter_profiles')
-      .select('id, available, price_per_km, price_per_tonne, users(name)')
+      .select('id, available, user_id, price_per_km, price_per_tonne, users(name)')
       .eq('id', transporterProfileId)
       .single()
 
@@ -45,10 +45,20 @@ async function createBooking(req, res) {
       return res.status(404).json({ error: 'Transporter not found.' })
     }
 
-    if (!profile.available) {
-      return res.status(400).json({ error: 'This transporter is currently unavailable.' })
-    }
+    // Check if transporter's account is suspended
+const { data: transporterUser } = await supabase
+  .from('users')
+  .select('suspended')
+  .eq('id', profile.user_id)
+  .single()
 
+if (transporterUser?.suspended) {
+  return res.status(403).json({ error: 'This transporter is not currently available on the platform.' })
+}
+
+if (!profile.available) {
+  return res.status(400).json({ error: 'This transporter is currently unavailable.' })
+}
     // Parse numeric distance and weight safely
     const distance = parseFloat(distanceKm)
     const weightTonnes = parseFloat(weight) // handles "2.5 tonnes" -> 2.5

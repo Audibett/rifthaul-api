@@ -7,21 +7,22 @@ async function getTransporters(req, res) {
     const { search, cargoType, capacity, availableOnly } = req.query
 
     const { data, error } = await supabase
-      .from('transporter_profiles')
-      .select(`
-        id,
-        user_id,
-        truck_type,
-        capacity,
-        location,
-        cargo_types,
-        price_per_km,
-        price_per_tonne,
-        rating,
-        trips,
-        available,
-        users ( id, name, phone )
-      `)
+  .from('transporter_profiles')
+  .select(`
+    id,
+    user_id,
+    truck_type,
+    capacity,
+    location,
+    cargo_types,
+    price_per_km,
+    price_per_tonne,
+    rating,
+    trips,
+    available,
+    users!inner ( id, name, phone, suspended )
+  `)
+  .eq('users.suspended', false)
 
     if (error) throw error
 
@@ -102,13 +103,17 @@ async function getTransporterById(req, res) {
         rating,
         trips,
         available,
-        users ( id, name, phone, email )
+        users ( id, name, phone, email, suspended )
       `)
       .eq('id', id)
       .single()
 
     if (error || !data) {
       return res.status(404).json({ error: 'Transporter not found.' })
+    }
+
+    if (data.users?.suspended) {
+       return res.status(404).json({ error: 'Transporter not found.' })
     }
 
     const transporter = {
