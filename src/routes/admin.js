@@ -5,6 +5,7 @@ const {
   getAllBookings,
   getAllTransporters,
   suspendUser,
+  updateUserRole, 
 } = require('../controllers/adminController')
 const { authenticate, requireRole } = require('../middleware/auth')
 
@@ -17,5 +18,6 @@ router.get('/users',        getUsers)
 router.get('/bookings',     getAllBookings)
 router.get('/transporters', getAllTransporters)
 router.patch('/users/:id/suspend', suspendUser)
+router.patch('/users/:id/role', updateUserRole)
 
 module.exports = router

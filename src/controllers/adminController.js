@@ -206,10 +206,49 @@ async function suspendUser(req, res) {
   }
 }
 
+// ── PATCH /api/admin/users/:id/role ───────────────────────────────
+async function updateUserRole(req, res) {
+  try {
+    const { id } = req.params
+    const { role } = req.body
+
+    if (!role) {
+      return res.status(400).json({ error: 'Role is required.' })
+    }
+
+    if (!['customer', 'transporter', 'admin'].includes(role)) {
+      return res.status(400).json({ error: 'Role must be customer, transporter, or admin.' })
+    }
+
+    // Prevent admin from changing their own role
+    if (id === req.user.id) {
+      return res.status(403).json({ error: 'You cannot change your own role.' })
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({ role })
+      .eq('id', id)
+      .select('id, name, email, role')
+      .single()
+
+    if (error) throw error
+
+    return res.status(200).json({
+      message: `${data.name} is now a ${role}.`,
+      user: data,
+    })
+  } catch (err) {
+    console.error('UpdateUserRole error:', err.message)
+    return res.status(500).json({ error: 'Failed to update user role.' })
+  }
+}
+
 module.exports = {
   getStats,
   getUsers,
   getAllBookings,
   getAllTransporters,
   suspendUser,
+  updateUserRole,
 }
