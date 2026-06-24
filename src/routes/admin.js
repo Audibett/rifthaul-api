@@ -5,19 +5,19 @@ const {
   getAllBookings,
   getAllTransporters,
   suspendUser,
-  updateUserRole, 
+  updateUserRole,
 } = require('../controllers/adminController')
 const { authenticate, requireRole } = require('../middleware/auth')
+const { validate, schemas } = require('../middleware/validate')
 
-// All admin routes require login + admin role
 router.use(authenticate)
 router.use(requireRole('admin'))
 
-router.get('/stats',        getStats)
-router.get('/users',        getUsers)
-router.get('/bookings',     getAllBookings)
-router.get('/transporters', getAllTransporters)
-router.patch('/users/:id/suspend', suspendUser)
-router.patch('/users/:id/role', updateUserRole)
+router.get('/stats',               getStats)
+router.get('/users',               getUsers)
+router.get('/bookings',            getAllBookings)
+router.get('/transporters',        getAllTransporters)
+router.patch('/users/:id/suspend', validate(schemas.suspend),  suspendUser)
+router.patch('/users/:id/role',    validate(schemas.role),     updateUserRole)
 
 module.exports = router

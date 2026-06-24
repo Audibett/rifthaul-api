@@ -1,12 +1,10 @@
 const router = require('express').Router()
 const { register, login, getMe } = require('../controllers/authController')
 const { authenticate } = require('../middleware/auth')
+const { validate, schemas } = require('../middleware/validate')
 
-// Public routes
-router.post('/register', register)
-router.post('/login', login)
-
-// Protected route
-router.get('/me', authenticate, getMe)
+router.post('/register', validate(schemas.register), register)
+router.post('/login',    validate(schemas.login),    login)
+router.get('/me',        authenticate,               getMe)
 
 module.exports = router

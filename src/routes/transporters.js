@@ -6,13 +6,24 @@ const {
   updateProfile,
 } = require('../controllers/transporterController')
 const { authenticate, requireRole } = require('../middleware/auth')
+const { validate, schemas } = require('../middleware/validate')
 
-// Public
-router.get('/', getTransporters)
+router.get('/',    getTransporters)
 router.get('/:id', getTransporterById)
 
-// Transporter only
-router.patch('/availability', authenticate, requireRole('transporter'), updateAvailability)
-router.patch('/profile', authenticate, requireRole('transporter'), updateProfile)
+router.patch(
+  '/availability',
+  authenticate,
+  requireRole('transporter'),
+  validate(schemas.availability),
+  updateAvailability
+)
+
+router.patch(
+  '/profile',
+  authenticate,
+  requireRole('transporter'),
+  updateProfile
+)
 
 module.exports = router

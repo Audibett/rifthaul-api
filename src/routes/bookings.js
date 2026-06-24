@@ -7,19 +7,14 @@ const {
   updateBookingStatus,
 } = require('../controllers/bookingController')
 const { authenticate, requireRole } = require('../middleware/auth')
+const { validate, schemas } = require('../middleware/validate')
 
-// All booking routes require login
 router.use(authenticate)
 
-// Customer routes
-router.post('/', requireRole('customer'), createBooking)
-router.get('/my', requireRole('customer'), getMyBookings)
-
-// Transporter routes
-router.get('/jobs', requireRole('transporter'), getMyJobs)
-
-// Shared routes
-router.get('/:id', getBookingById)
-router.patch('/:id/status', updateBookingStatus)
+router.post('/',    requireRole('customer'),     validate(schemas.booking), createBooking)
+router.get('/my',   requireRole('customer'),     getMyBookings)
+router.get('/jobs', requireRole('transporter'),  getMyJobs)
+router.get('/:id',                               getBookingById)
+router.patch('/:id/status', validate(schemas.status), updateBookingStatus)
 
 module.exports = router
