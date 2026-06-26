@@ -7,40 +7,40 @@ async function getTransporters(req, res) {
     const { search, cargoType, capacity, availableOnly } = req.query
 
     const { data, error } = await supabase
-  .from('transporter_profiles')
-  .select(`
-    id,
-    user_id,
-    truck_type,
-    capacity,
-    location,
-    cargo_types,
-    price_per_km,
-    price_per_tonne,
-    rating,
-    trips,
-    available,
-    users!inner ( id, name, phone, suspended )
-  `)
-  .eq('users.suspended', false)
+      .from('transporter_profiles')
+      .select(`
+        id,
+        user_id,
+        truck_type,
+        capacity,
+        location,
+        cargo_types,
+        price_per_km,
+        price_per_tonne,
+        rating,
+        trips,
+        available,
+        profiles!inner ( id, name, phone, suspended )
+      `)
+      .eq('profiles.suspended', false)
 
     if (error) throw error
 
     // Shape into clean frontend-friendly format
     let transporters = data.map((t) => ({
-      id: t.id,
-      userId: t.user_id,
-      name: t.users?.name || 'Unknown',
-      phone: t.users?.phone || '',
-      truck: t.truck_type,
-      capacity: t.capacity,
-      location: t.location,
-      cargoTypes: t.cargo_types || [],
-      pricePerKm: t.price_per_km,
+      id:            t.id,
+      userId:        t.user_id,
+      name:          t.profiles?.name  || 'Unknown',
+      phone:         t.profiles?.phone || '',
+      truck:         t.truck_type,
+      capacity:      t.capacity,
+      location:      t.location,
+      cargoTypes:    t.cargo_types || [],
+      pricePerKm:    t.price_per_km,
       pricePerTonne: t.price_per_tonne,
-      rating: t.rating,
-      trips: t.trips,
-      available: t.available,
+      rating:        t.rating,
+      trips:         t.trips,
+      available:     t.available,
     }))
 
     // Filter: available only
@@ -103,7 +103,7 @@ async function getTransporterById(req, res) {
         rating,
         trips,
         available,
-        users ( id, name, phone, email, suspended )
+        profiles ( id, name, phone, suspended )
       `)
       .eq('id', id)
       .single()
@@ -112,25 +112,25 @@ async function getTransporterById(req, res) {
       return res.status(404).json({ error: 'Transporter not found.' })
     }
 
-    if (data.users?.suspended) {
-       return res.status(404).json({ error: 'Transporter not found.' })
+    // Block access to suspended transporter profiles
+    if (data.profiles?.suspended) {
+      return res.status(404).json({ error: 'Transporter not found.' })
     }
 
     const transporter = {
-      id: data.id,
-      userId: data.user_id,
-      name: data.users?.name,
-      phone: data.users?.phone,
-      email: data.users?.email,
-      truck: data.truck_type,
-      capacity: data.capacity,
-      location: data.location,
-      cargoTypes: data.cargo_types || [],
-      pricePerKm: data.price_per_km,
+      id:            data.id,
+      userId:        data.user_id,
+      name:          data.profiles?.name  || 'Unknown',
+      phone:         data.profiles?.phone || '',
+      truck:         data.truck_type,
+      capacity:      data.capacity,
+      location:      data.location,
+      cargoTypes:    data.cargo_types || [],
+      pricePerKm:    data.price_per_km,
       pricePerTonne: data.price_per_tonne,
-      rating: data.rating,
-      trips: data.trips,
-      available: data.available,
+      rating:        data.rating,
+      trips:         data.trips,
+      available:     data.available,
     }
 
     return res.status(200).json({ transporter })
@@ -173,7 +173,10 @@ async function updateAvailability(req, res) {
 // Transporter updates their own profile details
 async function updateProfile(req, res) {
   try {
-    const { truckType, capacity, location, cargoTypes, pricePerKm, pricePerTonne } = req.body
+    const {
+      truckType, capacity, location,
+      cargoTypes, pricePerKm, pricePerTonne,
+    } = req.body
 
     const updates = {}
     if (truckType !== undefined)     updates.truck_type      = truckType
