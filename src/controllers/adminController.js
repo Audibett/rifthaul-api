@@ -3,19 +3,19 @@ const supabase = require('../db/supabase')
 // ── GET /api/admin/stats ───────────────────────────────────────────
 async function getStats(req, res) {
   try {
-    const [usersRes, bookingsRes, transportersRes] = await Promise.all([
-      supabase.from('users').select('id, role', { count: 'exact' }),
+    const [profilesRes, bookingsRes, transportersRes] = await Promise.all([
+      supabase.from('profiles').select('id, role', { count: 'exact' }),
       supabase.from('bookings').select('id, status, amount', { count: 'exact' }),
       supabase.from('transporter_profiles').select('id, available', { count: 'exact' }),
     ])
 
-    if (usersRes.error) throw usersRes.error
+    if (profilesRes.error) throw profilesRes.error
     if (bookingsRes.error) throw bookingsRes.error
     if (transportersRes.error) throw transportersRes.error
 
-    const users      = usersRes.data || []
-    const bookings   = bookingsRes.data || []
-    const transporters = transportersRes.data || []
+    const profiles      = profilesRes.data || []
+    const bookings      = bookingsRes.data || []
+    const transporters  = transportersRes.data || []
 
     const totalRevenue = bookings
       .filter((b) => b.status === 'completed')
@@ -23,14 +23,14 @@ async function getStats(req, res) {
 
     return res.status(200).json({
       stats: {
-        totalUsers:          users.length,
-        totalCustomers:      users.filter((u) => u.role === 'customer').length,
-        totalTransporters:   users.filter((u) => u.role === 'transporter').length,
-        totalBookings:       bookings.length,
-        pendingBookings:     bookings.filter((b) => b.status === 'pending').length,
-        activeBookings:      bookings.filter((b) => b.status === 'active').length,
-        completedBookings:   bookings.filter((b) => b.status === 'completed').length,
-        availableTransporters: transporters.filter((t) => t.available).length,
+        totalUsers:             profiles.length,
+        totalCustomers:         profiles.filter((p) => p.role === 'customer').length,
+        totalTransporters:      profiles.filter((p) => p.role === 'transporter').length,
+        totalBookings:          bookings.length,
+        pendingBookings:        bookings.filter((b) => b.status === 'pending').length,
+        activeBookings:         bookings.filter((b) => b.status === 'active').length,
+        completedBookings:      bookings.filter((b) => b.status === 'completed').length,
+        availableTransporters:  transporters.filter((t) => t.available).length,
         totalRevenue,
       },
     })
@@ -46,8 +46,8 @@ async function getUsers(req, res) {
     const { role, search, status } = req.query
 
     let query = supabase
-      .from('users')
-      .select('id, name, email, phone, role, suspended, created_at')
+      .from('profiles')
+      .select('id, name, phone, role, suspended, created_at')
       .order('created_at', { ascending: false })
 
     if (role && role !== 'all') {
@@ -65,12 +65,12 @@ async function getUsers(req, res) {
 
     let users = data
 
+    // Search filter (done in JS since profiles has no email)
     if (search) {
       const s = search.toLowerCase()
       users = users.filter(
         (u) =>
           u.name.toLowerCase().includes(s) ||
-          u.email.toLowerCase().includes(s) ||
           u.phone?.toLowerCase().includes(s)
       )
     }
@@ -91,7 +91,7 @@ async function getAllBookings(req, res) {
       .from('bookings')
       .select(`
         *,
-        users!customer_id ( name, email, phone )
+        profiles!customer_id ( name, phone )
       `)
       .order('created_at', { ascending: false })
 
@@ -104,8 +104,8 @@ async function getAllBookings(req, res) {
 
     const bookings = data.map((b) => ({
       id:          b.id,
-      customer:    b.users?.name || 'Unknown',
-      email:       b.users?.email || '',
+      customer:    b.profiles?.name || 'Unknown',
+      phone:       b.profiles?.phone || '',
       transporter: b.transporter_name,
       truck:       b.truck,
       from:        b.from_location,
@@ -132,6 +132,7 @@ async function getAllTransporters(req, res) {
       .from('transporter_profiles')
       .select(`
         id,
+        user_id,
         truck_type,
         capacity,
         location,
@@ -141,7 +142,8 @@ async function getAllTransporters(req, res) {
         rating,
         trips,
         available,
-        users ( id, name, email, phone, suspended )
+        created_at,
+        profiles!user_id ( id, name, phone, role, suspended )
       `)
       .order('created_at', { ascending: false })
 
@@ -149,11 +151,10 @@ async function getAllTransporters(req, res) {
 
     const transporters = data.map((t) => ({
       id:            t.id,
-      userId:        t.users?.id,
-      name:          t.users?.name || 'Unknown',
-      email:         t.users?.email || '',
-      phone:         t.users?.phone || '',
-      suspended:     t.users?.suspended || false,
+      userId:        t.profiles?.id,
+      name:          t.profiles?.name || 'Unknown',
+      phone:         t.profiles?.phone || '',
+      suspended:     t.profiles?.suspended || false,
       truck:         t.truck_type,
       capacity:      t.capacity,
       location:      t.location,
@@ -188,10 +189,10 @@ async function suspendUser(req, res) {
     }
 
     const { data, error } = await supabase
-      .from('users')
+      .from('profiles')
       .update({ suspended })
       .eq('id', id)
-      .select('id, name, email, role, suspended')
+      .select('id, name, role, suspended')
       .single()
 
     if (error) throw error
@@ -217,7 +218,9 @@ async function updateUserRole(req, res) {
     }
 
     if (!['customer', 'transporter', 'admin'].includes(role)) {
-      return res.status(400).json({ error: 'Role must be customer, transporter, or admin.' })
+      return res.status(400).json({
+        error: 'Role must be customer, transporter, or admin.',
+      })
     }
 
     // Prevent admin from changing their own role
@@ -226,10 +229,10 @@ async function updateUserRole(req, res) {
     }
 
     const { data, error } = await supabase
-      .from('users')
+      .from('profiles')
       .update({ role })
       .eq('id', id)
-      .select('id, name, email, role')
+      .select('id, name, role')
       .single()
 
     if (error) throw error
