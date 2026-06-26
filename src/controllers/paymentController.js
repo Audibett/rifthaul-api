@@ -14,7 +14,7 @@ async function initiatePayment(req, res) {
     // Fetch the booking
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select('*, users!customer_id(name, email, phone)')
+      .select('*, profiles!customer_id(name, phone)')
       .eq('id', bookingId)
       .single()
 
@@ -49,8 +49,8 @@ async function initiatePayment(req, res) {
       orderId:     bookingId,
       amount:      commission,
       description: `RiftHaul booking ${bookingId} - ${booking.cargo_type} from ${booking.from_location} to ${booking.to_location}`,
-      email:       booking.users?.email || '',
-      phone:       booking.users?.phone || '',
+      email:       booking.profiles?.email || '',
+      phone:       booking.profiles?.phone || '',
       firstName,
       lastName,
       callbackUrl,
@@ -63,13 +63,13 @@ async function initiatePayment(req, res) {
     // Save payment record
     await supabase.from('payments').insert({
       booking_id:           bookingId,
-      customer_id:          req.user.id,
+      customer_id:          req.profiles.id,
       amount:               commission,
       commission:           commission,
       pesapal_order_id:     bookingId,
       pesapal_tracking_id:  pesapalResponse.order_tracking_id,
       status:               'pending',
-      phone:                booking.users?.phone || '',
+      phone:                booking.profiles?.phone || '',
     })
 
     return res.status(200).json({
@@ -211,7 +211,7 @@ async function getAllPayments(req, res) {
       .from('payments')
       .select(`
         *,
-        users!customer_id ( name, email, phone )
+        profiles!customer_id ( name, email, phone )
       `)
       .order('created_at', { ascending: false })
 
@@ -220,8 +220,8 @@ async function getAllPayments(req, res) {
     const payments = data.map((p) => ({
       id:                 p.id,
       bookingId:          p.booking_id,
-      customer:           p.users?.name || 'Unknown',
-      email:              p.users?.email || '',
+      customer:           p.profiles?.name || 'Unknown',
+      email:              p.profiles?.email || '',
       amount:             p.amount,
       commission:         p.commission,
       status:             p.status,

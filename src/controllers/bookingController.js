@@ -37,7 +37,7 @@ async function createBooking(req, res) {
     // Check transporter exists and is available — also fetch their rates
     const { data: profile, error: profileError } = await supabase
       .from('transporter_profiles')
-      .select('id, available, user_id, price_per_km, price_per_tonne, users(name)')
+      .select('id, available, user_id, price_per_km, price_per_tonne, profiles(name)')
       .eq('id', transporterProfileId)
       .single()
 
@@ -47,7 +47,7 @@ async function createBooking(req, res) {
 
     // Check if transporter's account is suspended
 const { data: transporterUser } = await supabase
-  .from('users')
+  .from('profiles')
   .select('suspended')
   .eq('id', profile.user_id)
   .single()
@@ -85,7 +85,7 @@ if (!profile.available) {
         id: bookingId,
         customer_id: req.user.id,
         transporter_profile_id: transporterProfileId,
-        transporter_name: transporterName || profile.users?.name,
+        transporter_name: transporterName || profile.profiles?.name,
         truck,
         from_location: from,
         to_location: to,
