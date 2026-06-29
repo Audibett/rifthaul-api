@@ -2,12 +2,14 @@ require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 
+
 const authRoutes        = require('./src/routes/auth')
 const transporterRoutes = require('./src/routes/transporters')
 const bookingRoutes     = require('./src/routes/bookings')
 const adminRoutes       = require('./src/routes/admin')
 const paymentRoutes     = require('./src/routes/payments')
 const rateLimit         = require('express-rate-limit')
+const profileRoutes     = require('./src/routes/profile')
 
 const app  = express()
 const PORT = process.env.PORT || 4000
@@ -83,6 +85,7 @@ app.use('/api/transporters', transporterRoutes)
 app.use('/api/bookings',     bookingRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/payments', paymentRoutes)
+app.use('/api/profile', profileRoutes)
 
 // ── 404 handler ──────────────────────────────────────────────────
 app.use((req, res) => {
